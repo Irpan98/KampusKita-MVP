@@ -32,6 +32,7 @@ class MainAdapter(val clickListener: (Mahasiswa) -> Unit, val deleteListener: (M
         holder.bind(allMahasiswa[position])
     }
 
+
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         fun bind(mahasiswa: Mahasiswa) {
 
@@ -54,6 +55,11 @@ class MainAdapter(val clickListener: (Mahasiswa) -> Unit, val deleteListener: (M
 
 
         }
+
+
     }
+
+
+
 
 }

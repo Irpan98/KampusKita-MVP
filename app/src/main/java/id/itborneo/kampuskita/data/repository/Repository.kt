@@ -4,12 +4,10 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import id.itborneo.kampuskita.data.model.Mahasiswa
-import id.itborneo.kampuskita.data.response.MahasiswaReponse
 import id.itborneo.kampuskita.data.remote.ApiClient
 import id.itborneo.kampuskita.data.response.PostResponse
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.schedulers.Schedulers
 
 
 object Repository : DataSource {
@@ -19,38 +17,30 @@ object Repository : DataSource {
         Log.e(TAG, "getMahasiswa called")
 
         val mahasiswa = MutableLiveData<List<Mahasiswa>>()
-        ApiClient.create().getMahasiswa().enqueue(object : Callback<MahasiswaReponse> {
-            override fun onFailure(call: Call<MahasiswaReponse>, t: Throwable) {
-                Log.e(TAG, "onFailure called : gagal terhubung ke API error : ${t.message}")
-            }
 
-            override fun onResponse(
-                call: Call<MahasiswaReponse>,
-                response: Response<MahasiswaReponse>
-            ) {
 
+        ApiClient.create().getMahasiswa().subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
 
                 val getMahasiswa = mutableListOf<Mahasiswa>()
-                if (response.body() != null) {
+                if (response.message == "Data ditemukan") {
 
-                    val mahasiswaReponse = response.body() as MahasiswaReponse
+                    val mahasiswaReponse = response.data
 
-                    mahasiswaReponse.data?.forEach {
+                    mahasiswaReponse?.forEach {
                         it?.let {
                             getMahasiswa.add(it)
                         }
                     }
                     Log.d(TAG, getMahasiswa.toString())
+                    mahasiswa.postValue(getMahasiswa)
 
-
-                } else {
-                    Log.d(TAG, "response.body adalah null")
                 }
-                mahasiswa.postValue(getMahasiswa)
+            }, { e ->
 
-            }
+            })
 
-        })
         return mahasiswa
 
     }
@@ -66,36 +56,30 @@ object Repository : DataSource {
             mahasiswa.address == null
         ) return postResponse
 
+
         ApiClient.create()
             .addMahasiswa(mahasiswa.name, mahasiswa.contact.toLong(), mahasiswa.address)
-            .enqueue(object : Callback<PostResponse> {
-                override fun onFailure(call: Call<PostResponse>, t: Throwable) {
-                    Log.e(TAG, "onFailure called : gagal terhubung ke API error : ${t.message}")
-                }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
+                if (response != null) {
+                    if (response.isSuccess == true) {
+//
 
-                override fun onResponse(
-                    call: Call<PostResponse>,
-                    response: Response<PostResponse>
-                ) {
-
-
-                    var getResponse = PostResponse()
-                    if (response.body() != null) {
-
-                        getResponse = response.body() as PostResponse
-
+                        var getResponse: PostResponse = response
 
                         Log.d(TAG, getResponse.toString())
-
-
+//
+                        postResponse.postValue(getResponse)
                     } else {
                         Log.d(TAG, "response.body adalah null")
                     }
-                    postResponse.postValue(getResponse)
-
                 }
 
+            }, {
             })
+
+
         return postResponse
     }
 
@@ -111,41 +95,36 @@ object Repository : DataSource {
             mahasiswa.address == null
         ) return postResponse
 
-        ApiClient.create()
-            .updateMahasiswsa(
-                mahasiswa.id.toInt(),
-                mahasiswa.name,
-                mahasiswa.contact.toInt(),
-                mahasiswa.address
-            )
-            .enqueue(object : Callback<PostResponse> {
-                override fun onFailure(call: Call<PostResponse>, t: Throwable) {
-                    Log.e(TAG, "onFailure called : gagal terhubung ke API error : ${t.message}")
-                }
-
-                override fun onResponse(
-                    call: Call<PostResponse>,
-                    response: Response<PostResponse>
-                ) {
 
 
-                    var getResponse = PostResponse()
-                    if (response.body() != null) {
+        ApiClient.create().updateMahasiswsa(
+            mahasiswa.id.toInt(),
+            mahasiswa.name,
+            mahasiswa.contact.toLong(),
+            mahasiswa.address
+        )
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
 
-                        getResponse = response.body() as PostResponse
+                val getResponse: PostResponse
+                if (response.isSuccess == true) {
+
+                    getResponse = response
 
 
-                        Log.d(TAG, getResponse.toString())
-
-
-                    } else {
-                        Log.d(TAG, "response.body adalah null")
-                    }
+                    Log.d(TAG, getResponse.toString())
                     postResponse.postValue(getResponse)
 
+
+                } else {
+                    Log.d(TAG, "response.body adalah null")
                 }
+            }, {
 
             })
+
+
         return postResponse
     }
 
@@ -155,38 +134,27 @@ object Repository : DataSource {
 
         val postResponse = MutableLiveData<PostResponse>()
 
-        ApiClient.create()
-            .deleteMahasiswa(
-                id.toInt()
-            )
-            .enqueue(object : Callback<PostResponse> {
-                override fun onFailure(call: Call<PostResponse>, t: Throwable) {
-                    Log.e(TAG, "onFailure called : gagal terhubung ke API error : ${t.message}")
+
+        ApiClient.create().deleteMahasiswa(id).subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ response ->
+                var getResponse = PostResponse()
+                if (response.isSuccess == true) {
+
+                    getResponse = response as PostResponse
+
+
+                    Log.d(TAG, getResponse.toString())
+
+
+                } else {
+                    Log.d(TAG, "response.body adalah null")
                 }
-
-                override fun onResponse(
-                    call: Call<PostResponse>,
-                    response: Response<PostResponse>
-                ) {
-
-
-                    var getResponse = PostResponse()
-                    if (response.body() != null) {
-
-                        getResponse = response.body() as PostResponse
-
-
-                        Log.d(TAG, getResponse.toString())
-
-
-                    } else {
-                        Log.d(TAG, "response.body adalah null")
-                    }
-                    postResponse.postValue(getResponse)
-
-                }
+                postResponse.postValue(getResponse)
+            }, {
 
             })
+
         return postResponse
     }
 

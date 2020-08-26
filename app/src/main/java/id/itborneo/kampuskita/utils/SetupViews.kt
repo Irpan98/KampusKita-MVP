@@ -21,7 +21,7 @@ import androidx.appcompat.app.AlertDialog
 //
 //}
 
-fun setDialogNoInternet(context: Context, retry: (() -> Unit)) {
+fun setDialogNoInternet(context: Context, retry: () -> Unit) {
     val builder: AlertDialog.Builder = AlertDialog.Builder(context)
     builder.setCancelable(false)
     builder.setTitle("Tidak Ada Internet")
@@ -65,3 +65,21 @@ fun setDialogComfirm(context: Context, delete: (() -> Unit), cancelDelete: (() -
     dialog.show()
 }
 
+
+fun checkInternet(context: Context, thisFuntion: () -> Unit): Boolean {
+    return if (isInternetAvailable(context)) {
+
+        true
+    } else {
+        noInternet(context) {
+
+            thisFuntion()
+        }
+        false
+    }
+}
+
+fun noInternet(context: Context, callback: () -> Unit) {
+    setDialogNoInternet(context) { callback() }
+
+}

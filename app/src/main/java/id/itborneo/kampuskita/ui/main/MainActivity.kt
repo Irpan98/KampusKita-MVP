@@ -4,13 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import id.itborneo.kampuskita.R
 import id.itborneo.kampuskita.data.model.Mahasiswa
+import id.itborneo.kampuskita.data.response.PostResponse
 import id.itborneo.kampuskita.ui.item_mahasiswa.ItemActivity
 import id.itborneo.kampuskita.utils.SwipeToDeleteCallback
 import id.itborneo.kampuskita.utils.isInternetAvailable
@@ -19,46 +18,30 @@ import id.itborneo.kampuskita.utils.setDialogNoInternet
 import kotlinx.android.synthetic.main.activity_main.*
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), MainContract.View {
 
     private val TAG = "MainActivity"
 
     private var listMahasiswa = mutableListOf<Mahasiswa>()
 
+    private lateinit var presenter: MainPresenter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
+
         setRecycler()
 
-        setViewModel()
 
         addMahasiswa()
 
-        getMahasiswa()
+//        getMahasiswa()
+        presenter = MainPresenter(this, this)
 
 
     }
 
-    private fun deleteMahasiswa(mahasiswa: Mahasiswa?) {
-
-
-        if (isInternetAvailable(this)) {
-            viewModel.deleteMahasiswa(mahasiswa!!.id!!.toInt()).observe(this, Observer {
-//                sfLoading.stopShimmer()
-//                sfLoading.visibility = View.GONE
-                listMahasiswa.remove(mahasiswa)
-                adapter.notifyDataSetChanged()
-
-
-            })
-        } else {
-            setDialogNoInternet(this) {
-                //retry
-                deleteMahasiswa(mahasiswa)
-            }
-        }
-    }
 
     private fun addMahasiswa() {
         fab_add_mahasisw.setOnClickListener {
@@ -67,40 +50,23 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun setViewModel() {
+//    private fun setViewModel() {
+//
+//        viewModel = ViewModelProvider(
+//            this,
+//            ViewModelProvider.NewInstanceFactory()
+//        )[MainViewModel::class.java]
+//
+//    }
 
-        viewModel = ViewModelProvider(
-            this,
-            ViewModelProvider.NewInstanceFactory()
-        )[MainViewModel::class.java]
-
-    }
-
-    private lateinit var viewModel: MainViewModel
-
-    private fun getMahasiswa() {
-
-        if (isInternetAvailable(this)) {
-            viewModel.getMahasiswa().observe(this, Observer {
-//                sfLoading.stopShimmer()
-//                sfLoading.visibility = View.GONE
-                listMahasiswa = it.toMutableList()
-                adapter.setMahasiswa(listMahasiswa)
-                adapter.notifyDataSetChanged()
-
-
-            })
-        } else {
-            setDialogNoInternet(this) {
-                //retry
-                getMahasiswa()
-            }
-        }
-
-
-    }
 
     private lateinit var adapter: MainAdapter
+
+
+    override fun onResume() {
+        super.onResume()
+        presenter.getMahasiswa()
+    }
 
     private fun setRecycler() {
         adapter = MainAdapter({
@@ -127,9 +93,9 @@ class MainActivity : AppCompatActivity() {
                     Log.d(TAG, "setupOnSwipe + delete ${viewHolder.adapterPosition}")
                     //delete
                     val mahasiswa = listMahasiswa[viewHolder.adapterPosition]
-                    deleteMahasiswa(mahasiswa)
-                    adapter.setMahasiswa(listMahasiswa)
-                    adapter.notifyDataSetChanged()
+                    mahasiswa.id?.toInt()?.let { presenter.deleteMahasiswa(it) }
+//                    adapter.setMahasiswa(listMahasiswa)
+//                    adapter.notifyDataSetChanged()
 
                 }, {
 
@@ -153,9 +119,25 @@ class MainActivity : AppCompatActivity() {
         intent.putExtra(ItemActivity.EXTRA_ITEM, mahasiswa)
         startActivity(intent)
     }
-    override fun onResume() {
-        super.onResume()
-        getMahasiswa()
+
+    override fun getMahasiswa(allMahasiswa: List<Mahasiswa>) {
+        Log.d(TAG, "getMahasiswa is called")
+        listMahasiswa = allMahasiswa.toMutableList()
+        adapter.setMahasiswa(listMahasiswa)
         adapter.notifyDataSetChanged()
+
     }
+
+
+    override fun getDeleted(deletedMahasiswa: PostResponse) {
+
+        adapter.notifyDataSetChanged()
+
+    }
+
+
+
+
+
 }
+//}

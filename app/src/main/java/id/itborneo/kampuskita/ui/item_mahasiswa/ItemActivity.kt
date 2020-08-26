@@ -1,21 +1,18 @@
 package id.itborneo.kampuskita.ui.item_mahasiswa
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
+import androidx.appcompat.app.AppCompatActivity
 import id.itborneo.kampuskita.R
 import id.itborneo.kampuskita.data.model.Mahasiswa
-import id.itborneo.kampuskita.utils.isInternetAvailable
-import id.itborneo.kampuskita.utils.setDialogNoInternet
+import id.itborneo.kampuskita.data.response.PostResponse
 import kotlinx.android.synthetic.main.activity_item_mahasiwa.*
 
-class ItemActivity : AppCompatActivity() {
+class ItemActivity : AppCompatActivity(), ItemContract.View {
 
 
-    private lateinit var viewModel: ItemViewModel
+    private lateinit var presenter: ItemPresenter
 
     companion object {
         const val EXTRA_ITEM = "mahasiswa"
@@ -30,7 +27,7 @@ class ItemActivity : AppCompatActivity() {
         setContentView(R.layout.activity_item_mahasiwa)
 
 
-        setViewModel()
+        presenter = ItemPresenter(this, this)
 
 
         val getData = intent.getParcelableExtra<Mahasiswa>(EXTRA_ITEM)
@@ -40,8 +37,8 @@ class ItemActivity : AppCompatActivity() {
             etAddress.setText(getData.address)
             etName.setText(getData.name)
             etContact.setText(getData.contact)
-        }else{
-            btn_add.text = "Update Mahasiswa"
+        } else {
+            btn_add.text = "Tambahkan Mahasiswa"
         }
 
 
@@ -63,9 +60,9 @@ class ItemActivity : AppCompatActivity() {
             )
 
             if (isNew) {
-                addMahasiswa()
+                presenter.addMahasiswa(mahasiswa)
             } else {
-                editMahasiswa()
+                presenter.updateMahasiswa(mahasiswa)
             }
             Log.d(TAG, mahasiswa.toString())
         }
@@ -73,49 +70,17 @@ class ItemActivity : AppCompatActivity() {
 
     }
 
-    private fun setViewModel() {
-
-        viewModel = ViewModelProvider(
-            this,
-            ViewModelProvider.NewInstanceFactory()
-        )[ItemViewModel::class.java]
+    override fun addedMahasiswa(postResponse: PostResponse) {
+        onBackPressed()
+        Toast.makeText(this, "Berhasil Menambahkan  ${mahasiswa.name}", Toast.LENGTH_LONG)
+            .show()
 
     }
 
+    override fun updatedMahasiswa(postResponse: PostResponse) {
+        onBackPressed()
+        Toast.makeText(this, "Berhasil Update  ${mahasiswa.name}", Toast.LENGTH_LONG).show()
 
-    private fun addMahasiswa() {
-
-        if (isInternetAvailable(this)) {
-            viewModel.addMahasiswa(mahasiswa).observe(this, Observer {
-
-                Toast.makeText(this, "Berhasil Menambahkan  ${mahasiswa.name}", Toast.LENGTH_LONG).show()
-
-                onBackPressed()
-            })
-        } else {
-            setDialogNoInternet(this) {
-                //retry
-                addMahasiswa()
-            }
-        }
-
-
-    }
-
-    private fun editMahasiswa() {
-        if (isInternetAvailable(this)) {
-            viewModel.updateMahasiswa(mahasiswa).observe(this, Observer {
-
-                Toast.makeText(this, "Berhasil Update  ${mahasiswa.name}", Toast.LENGTH_LONG).show()
-                onBackPressed()
-
-            })
-        } else {
-            setDialogNoInternet(this) {
-                //retry
-                editMahasiswa()
-            }
-        }
     }
 
 
